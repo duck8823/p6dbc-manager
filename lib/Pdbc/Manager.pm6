@@ -8,9 +8,10 @@ use Pdbc::UpdateCase;
 class Manager {
 
   has DBDish::Connection $!db;
+  has Bool $!in_transaction;
 
   method new(Str $driver, Str $database, Str :$user?, Str :$password?, Str :$host?, Int :$port?) {
-    my $self = self.bless;
+    my $self = self.bless(in_transaction => False);
     $self!db(DBIish.connect($driver, :$database, :$user, :$password, :$host, :$port));
     return $self;
   }
@@ -45,6 +46,30 @@ class Manager {
 
   method update($data) {
     return UpdateCase.new($!db, $data);
+  }
+
+  method begin {
+    if $!in_transaction {
+      die 'allready in transaction.'
+    }
+    $!db.do('BEGIN TRANSACTION');
+    $!in_transaction = True;
+  }
+
+  method commit {
+    unless $!in_transaction {
+      die 'not in transaction.'
+    }
+    $!db.do('COMMIT');
+    $!in_transaction = False;
+  }
+
+  method rollback {
+    unless $!in_transaction {
+      die 'not in transaction.'
+    }
+    $!db.do('ROLLBACK');
+    $!in_transaction = False;
   }
 
   method !create_insert_clause($data) {

@@ -31,3 +31,40 @@ is-deeply $manager.from(Hoge).where(Where.new('name', IS_NOT_NULL)).list, [Hoge.
 
 $manager.update(Hoge.new(id => 1, name => 'name_1')).where(Where.new('id', 1, EQUAL)).execute;
 is-deeply $manager.from(Hoge).where(Where.new('name', IS_NOT_NULL)).list, [Hoge.new(id => 2, name => 'name_2'), Hoge.new(id => 1, name => 'name_1')];
+
+$manager.drop(Hoge).execute;
+$manager.create(Hoge).execute;
+
+$manager.begin;
+try {
+  $manager.insert(Hoge.new(id => 1, name => 'name_1')).execute;
+  $manager.insert(Hoge.new(id => '2', name => 'name_2')).execute;
+  CATCH {
+    default {
+      # ignore
+    }
+  }
+}
+my $db := $manager.^attributes[0].get_value($manager);
+$db.dispose;
+
+$manager = connect('SQLite', 'test.db');
+is-deeply $manager.from(Hoge).list, [];
+
+$manager.begin;
+
+$manager.insert(Hoge.new(id => 1, name => 'name_1')).execute;
+$manager.insert(Hoge.new(id => 2, name => 'name_2')).execute;
+
+$manager.rollback;
+
+is-deeply $manager.from(Hoge).list, [];
+
+$manager.begin;
+
+$manager.insert(Hoge.new(id => 1, name => 'name_1')).execute;
+$manager.insert(Hoge.new(id => 2, name => 'name_2')).execute;
+
+$manager.commit;
+
+is-deeply $manager.from(Hoge).list, [Hoge.new(id => 1, name => 'name_1'), Hoge.new(id => 2, name => 'name_2')];
