@@ -8,16 +8,8 @@ class FromCase {
   has Any $!entity;
   has Where $!where;
 
-  multi method new(DBDish::Connection $db, Any $entity) {
-    return self.new($db, $entity, Where.new);
-  }
-
-  multi method new(DBDish::Connection $db, Any $entity, Where $where) {
-    my $self = self.bless;
-    $self!db($db);
-    $self!entity($entity);
-    $self!where($where);
-    return $self;
+  submethod BUILD(DBDish::Connection :$!db, Any :$!entity, Where :$!where?) {
+    $!where = Where.new without $!where;
   }
 
   method where(Where $where) {
@@ -52,18 +44,6 @@ class FromCase {
   }
 
   method delete {
-    return Executable.new($!db, sprintf('DELETE FROM %s %s', $!entity.^name, $!where.to_clause));
-  }
-
-  method !db(DBDish::Connection $db) {
-    $!db = $db;
-  }
-
-  method !entity(Any $entity) {
-    $!entity = $entity;
-  }
-
-  method !where(Where $where) {
-    $!where = $where;
+    return Executable.new(:$!db, sql => sprintf('DELETE FROM %s %s', $!entity.^name, $!where.to_clause));
   }
 }

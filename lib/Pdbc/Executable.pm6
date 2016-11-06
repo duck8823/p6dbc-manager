@@ -2,19 +2,17 @@ use DBDish::Connection;
 
 class Executable {
 
-  has DBDish::Connection $.db;
-  has Str $.sql is rw;
+  has DBDish::Connection $!db;
+  has Str $!sql;
 
-  method new(DBDish::Connection $db is rw, Str $sql) {
-    return self.bless(:$db, :$sql);
-  }
+  submethod BUILD(DBDish::Connection :$!db, Str :$!sql?) {}
 
   method execute {
-    $!db.do($.sql);
+    $!db.do($!sql);
   }
 
-  method db {
-    die 'not accessible.';
+  method sql {
+    return $!sql;
   }
 
 }

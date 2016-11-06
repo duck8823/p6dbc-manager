@@ -10,18 +10,17 @@ class Manager {
   has DBDish::Connection $!db;
   has Bool $!in_transaction;
 
-  method new(Str $driver, Str $database, Str :$user?, Str :$password?, Str :$host?, Int :$port?) {
-    my $self = self.bless(in_transaction => False);
-    $self!db(DBIish.connect($driver, :$database, :$user, :$password, :$host, :$port));
-    return $self;
+  submethod BUILD(Str :$driver!, Str :$database!, Str :$user?, Str :$password?, Str :$host?, Int :$port?) {
+    $!db = DBIish.connect($driver, :$database, :$user, :$password, :$host, :$port);
+    $!in_transaction = False;
   }
 
   method from($entity) {
-    return FromCase.new($!db, $entity);
+    return FromCase.new(:$!db, :$entity);
   }
 
   method drop($entity) {
-    return Executable.new($!db, sprintf('DROP TABLE IF EXISTS %s', $entity.^name));
+    return Executable.new(:$!db, sql => sprintf('DROP TABLE IF EXISTS %s', $entity.^name));
   }
 
   method create($entity) {
@@ -37,15 +36,15 @@ class Manager {
       (my $name = $attr.name) ~~ s/^\$(\!|\.)?//;
       push @column, sprintf('%s %s', $name, $type);
     }
-    return Executable.new($!db, sprintf('CREATE TABLE %s (%s)', $entity.^name, @column.join(', ')));
+    return Executable.new(:$!db, sql => sprintf('CREATE TABLE %s (%s)', $entity.^name, @column.join(', ')));
   }
 
   method insert($data) {
-    return Executable.new($!db, sprintf('INSERT INTO %s %s', $data.WHAT.^name, self!create_insert_clause($data)));
+    return Executable.new(:$!db, sql => sprintf('INSERT INTO %s %s', $data.WHAT.^name, self!create_insert_clause($data)));
   }
 
   method update($data) {
-    return UpdateCase.new($!db, $data);
+    return UpdateCase.new(:$!db, :$data);
   }
 
   method begin {
@@ -81,10 +80,6 @@ class Manager {
       push @value, ($value.defined ?? "'$value'" !! 'NULL');
     }
     return sprintf('(%s) VALUES (%s)', @column.join(', '), @value.join(', '))
-  }
-
-  method !db($db) {
-    $!db = $db;
   }
 
 }

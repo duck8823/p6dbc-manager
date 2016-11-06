@@ -2,16 +2,28 @@ use DBDish::Connection;
 use Pdbc::Executable;
 use Pdbc::Where;
 
-class UpdateCase is Executable {
+class UpdateCase {
 
-  method new(DBDish::Connection $db is rw, Any $data) {
-    return self.bless(:$db, sql => sprintf('UPDATE %s SET %s', $data.WHAT.^name, self!create_update_clause($data)));
+  has DBDish::Connection $!db;
+  has Str $!base_sql;
+  has Where $!where;
+
+  submethod BUILD(DBDish::Connection :$!db, Any :$data) {
+    $!base_sql = sprintf('UPDATE %s SET %s', $data.WHAT.^name, self!create_update_clause($data));
+    $!where = Where.new;
   }
 
   method where(Where $where) {
-    $.sql ~~ s/\s+WHERE\s.*//;
-    $.sql ~= ' ' ~ $where.to_clause;
+    $!where = $where;
     return self;
+  }
+
+  method execute {
+    Executable.new(:$!db, sql => $!base_sql ~ ' ' ~ $!where.to_clause ).execute;
+  }
+
+  method sql {
+    return $!base_sql ~ ' ' ~ $!where.to_clause;
   }
 
   method !create_update_clause(Any $data) {
