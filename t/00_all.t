@@ -68,3 +68,9 @@ $manager.insert(Hoge.new(id => 2, name => 'name_2')).execute;
 $manager.commit;
 
 is-deeply $manager.from(Hoge).list, [Hoge.new(id => 1, name => 'name_1'), Hoge.new(id => 2, name => 'name_2')];
+
+my $where = Where.new('name', 'name' , LIKE)
+              .or(Where.new('id', IS_NOT_NULL)
+                .and(Where.new('flg', IS_NULL)))
+              .or(Where.new('id', 1, NOT_EQUAL));
+is $where.to_clause, "WHERE ( name LIKE '%name%' OR ( id IS NOT NULL AND flg IS NULL ) OR id <> '1' )"

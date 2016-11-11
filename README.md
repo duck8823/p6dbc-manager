@@ -42,3 +42,33 @@ my $update_sql = $manager.update(Hoge.new(id => 1, name => 'name_1', flg => Fals
 my $delete_sql = $manager.from(Hoge).where(Where.new('id', 1, EQUAL)).delete.sql;
 my $drop_sql = $manager.drop(Hoge).sql;
 ```
+
+## USAGE
+### Where条件の組み合わせ
+```perl6
+Where.new('column_1', 'value_1' , EQUAL)
+  .and(Where.new('column_2', IS_NULL)
+    .or(Where.new('column_2', 'value_2', LIKE)))
+  .or(Where.new('column_3', 'value_3', EQUAL));
+```
+上記で生成されるSQL
+```sql
+WHERE ( column_1 = 'value_1' AND ( column_2 IS NULL OR column_2 LIKE '%value_2%' ) AND column_3 = 'value_3' )
+```
+### Transaction
+デフォルトはオートコミットですが、トランザクションを制御することもできます.
+#### BEGIN Transaction
+```perl6
+$manager.begin;
+```
+#### COMMIT
+```perl6
+$manager.commit;
+```
+#### ROLLBACK
+```perl6
+$manager.rollback;
+```
+
+## License
+MIT License
